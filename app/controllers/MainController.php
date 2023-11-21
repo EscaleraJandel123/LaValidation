@@ -36,7 +36,7 @@ class MainController extends Controller {
             "token" => "unverified",
         );
         $this->login_model->addUser($data);
-        redirect('/login');
+        redirect('login');
     }
     public function auth() {
         $email = $this->io->post('email');
