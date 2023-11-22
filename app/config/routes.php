@@ -51,9 +51,9 @@ $router->get('/login', 'MainController::login');
 $router->post('/auth', 'MainController::auth');
 $router->get('/register', 'MainController::register');
 $router->post('/create', 'MainController::create');
-// $router->get('/upload', 'MainController::upload');
-// $router->post('/uploadFile', 'MainController::uploadFile'); // Uncomment this if you want to enable the uploadFile method
+
 $router->get('/logout', 'MainController::logout');
-$router->get('/pendingVerification/(:num)', 'MainController::pendingVerification');
+$router->get('/pending/(:num)', 'MainController::pending');
+$router->post('/upload', 'MainController::uploadFile'); 
 
 

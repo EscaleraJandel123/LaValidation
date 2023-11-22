@@ -5,10 +5,8 @@ class MainController extends Controller {
 
     public function __construct(){
         parent::__construct();
-        $this->call->library('session');
-        $this->call->library('email');
-        $this->call->model('Login_model');
-        $this->getusers = $this->Login_model->getusers();
+        // $this->call->library('session');
+        $this->getusers = $this->User_model->getusers();
     }
 	public function login(){
         return $this->call->view('login');
@@ -19,38 +17,38 @@ class MainController extends Controller {
 	public function upload(){
         return $this->call->view('upload_form');
     }
-    public function logout()
-    {
-        $this->session->sess_destroy();
-        redirect('login');
-    }
+    
+    // public function logout() {
+    //     $this->session->unset_userdata('userEmail');
 
+    //     redirect('login');
+    // }
+    
     public function create() {
-        // retrieve form input values
         $email = $this->io->post('email');
         $password = $this->io->post('password');
-        // add user inputs to an array and continue with the insertion of data to the database with hashed token & password for security
         $data = array(
             "email" => $email,
             "password"=> password_hash($password,PASSWORD_DEFAULT),
-            "token" => "unverified",
+            "status" => "unverified",
         );
-        $this->login_model->addUser($data);
+        $this->User_model->addUser($data);
         redirect('login');
     }
     public function auth() {
         $email = $this->io->post('email');
         $password = $this->io->post('password');
+        
         $users = $this->getusers;
         foreach ($users as $user) {
             if ($email == $user['email']) {
                 if (password_verify($password, $user['password'])) {
-                    if($user['token'] == "unverified")
+                    if($user['status'] == "unverified")
                     {
                         $recepient_email = $email;
                         $subject = "Email Verification";
-                        $content = "Hello,<br><br>This is a LAVLAUST4 email.<br>Proceed to this <a href='" . site_url("pendingVerification") . "/" . $user['id'] . "'>Link</a> to verify your account.<br><br>Best regards,<br>Your Name";
-                        $this->sendEmailVerification($recepient_email,$subject,$content);
+                        $content = "click the link to verify <a href='" . site_url("pending") . "/" . $user['id'] . "'>Link</a>";
+                        $this->sendVerify($recepient_email,$subject,$content);
                         
                         $this->call->view('unverified');
                         return;
@@ -69,13 +67,13 @@ class MainController extends Controller {
         redirect('login');
     }
 
-    public function pendingVerification($id)
+    public function pending($id)
     {
-        $data = $this->login_model->searchUser($id);
-        $data['token'] = "verified";
-        if($data['token'] == "verified")
+        $data = $this->User_model->searchUser($id);
+        $data['status'] = "verified";
+        if($data['status'] == "verified")
         {
-            $this->login_model->updateToken($id,$data);
+            $this->User_model->updateToken($id,$data);
             $this->session->set_userdata('userEmail', $data['email']);
             $this->call->view('verified',$data);
         } else {
@@ -83,7 +81,7 @@ class MainController extends Controller {
         }
     }
 
-    public function sendEmailVerification($recepient_email,$subject,$content)
+    public function sendVerify($recepient_email,$subject,$content)
     {
         $this->email->sender('alejandrogino950@gmail.com', 'Lavalust Activity');
         $this->email->recipient($recepient_email);
@@ -92,4 +90,39 @@ class MainController extends Controller {
         $this->email->send();
     }
 
+    Public function uploadFile(){
+        $this->call->library('upload', $_FILES["fileToUpload"]);
+		$this->upload
+			->set_dir('public')
+			->allowed_extensions(array('jpg'))
+			->allowed_mimes(array('image/jpeg'))
+			->is_image();
+		If($this->upload->do_upload()) {
+			$data['filename'] = $this->upload->get_filename();
+            
+            $email = $this->io->post('email');
+            $name = $this->io->post('name');
+            $subject = $this->io->post('subject');
+            $content = $this->io->post('content');
+            $path = "public/" . $this->upload->get_filename();
+            $this->send($email, $name, $subject, $content, $path);
+			echo 'success';
+		} else {
+			$data['errors'] = $this->upload->get_errors();
+			$this->call->view('upload_form', $data);
+		}
+    }
+
+    Public function send($email,$name,$subject,$content,$path)
+    {
+        $fullContent = "Hello, <br><br>This is a sample email.<br>These are the email's contents: <br>" . $content;
+        $this->email->recipient($email);
+        $this->email->sender($this->session->userdata('userEmail'), $name);
+
+        $this->email->subject($subject);
+        $this->email->email_content($fullContent,'html');
+        $this->email->attachment($path);
+        $this->email->send();
+    }
 }
+
